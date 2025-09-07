@@ -1,126 +1,80 @@
-use std::{io::ErrorKind, u16};
+use Lc3::*;
+use Lc3::opcodes::{extract_opcode, Opcodes};
 
-#[derive(Debug)]
-#[repr(u16)]
-enum Registers {
-    R0 = 0,
-    R1,
-    R2,
-    R3,
-    R4,
-    R5,
-    R6,
-    R7,
-    PC,
-    COND,
-    COUNT,
-}
 
-#[derive(Debug)]
-enum Opcodes {
-    BR,
-    ADD,  /* add  */
-    LD,   /* load */
-    ST,   /* store */
-    JSR,  /* jump register */
-    AND,  /* bitwise and */
-    LDR,  /* load register */
-    STR,  /* store register */
-    RTI,  /* unused */
-    NOT,  /* bitwise not */
-    LDI,  /* load indirect */
-    STI,  /* store indirect */
-    JMP,  /* jump */
-    RES,  /* reserved (unused) */
-    LEA,  /* load effective address */
-    TRAP, /* execute trap */
-}
-
-#[derive(Debug)]
-
-enum Flags {
-    POS = 1 << 0, /* P */
-    ZRO = 1 << 1, /* Z */
-    NEG = 1 << 2, /* N */
-}
-
-const MEMORY_MAX: usize = 1 << 16;
-const REG_LOCATIONS: u16 = 10;
 const PC_START: u16 = 0x3000;
 
-#[derive(Debug)]
-struct Memory {
-    locations: [u16; MEMORY_MAX as usize],
-}
-
-#[derive(Debug)]
-struct Register {
-    locations: [u16; REG_LOCATIONS as usize],
-}
-
-trait RegisterTrait {
-    fn new() -> Self;
-    fn load(&self, reg_location: Registers) -> Option<u16>;
-    fn store(&mut self, instr: u16, reg_location: Registers) -> Result<(), ErrorKind>;
-}
-
-trait MemoryTrait {
-    fn new() -> Self;
-    fn mem_read(&self, register: &mut Register) -> Option<u16>;
-}
-
-impl RegisterTrait for Register {
-    fn new() -> Self {
-        Self {
-            locations: [0u16; REG_LOCATIONS as usize],
-        }
-    }
-
-    fn load(&self, reg_location: Registers) -> Option<u16> {
-        let data = self.locations[reg_location as usize];
-        return Some(data);
-    }
-    fn store(&mut self, instr: u16, reg_location: Registers) -> Result<(), ErrorKind> {
-        self.locations[reg_location as usize] = instr;
-        return Ok(());
-    }
-}
-
-impl MemoryTrait for Memory {
-    fn new() -> Self {
-        Self {
-            locations: [0u16; MEMORY_MAX as usize],
-        }
-    }
-
-    fn mem_read(&self, register: &mut Register) -> Option<u16> {
-        let mem_addr = register.locations[Registers::PC as usize];
-        let _ = register.store(mem_addr + 1, Registers::PC);
-        Some(self.locations[mem_addr as usize])
-    }
-}
-
 fn main() {
-    let mut memory = Memory::new();
-    let mut register = Register::new();
-
-    memory.locations[12288] = 0x3000;
-    let _ = register.store(PC_START, Registers::PC);
-    let instr = memory.mem_read(&mut register).unwrap();
-
-    let opcode = instr >> 12;
-
-
-    println!("{register:?}");
-     println!("{:#01x}", 12288);
-     println!("{opcode}");
-     println!("instruction {instr:#01x}");
+    // Create a new LC-3 virtual machine
+    let mut vm = LC3VM::new();
     
-
-    match opcode {
-        1 => println!("Addition Operation"),
-        2 => println!("AND operation"),
-        3 => println!("NOT operation"),
-        _ => println!("Unknown.......")
+    
+    let test_program = vec![
+        0x3000,
+    ];
+    
+  
+    match vm.initialize(PC_START, &test_program) {
+        Ok(_) => {
+            println!("VM initialized successfully");
+            println!("Program loaded at address 0x{:04X}", PC_START);
+        }
+        Err(e) => {
+            eprintln!("Failed to initialize VM: {}", e);
+            return;
+        }
     }
+    
+   
+    println!("\nInitial VM State:");
+    println!("{}", vm.debug_info());
+    
+    // Execute one instruction to demonstrate the modular structure
+    match vm.step() {
+        Ok(result) => {
+            println!("\nInstruction executed successfully");
+            println!("Execution result: {:?}", result);
+        }
+        Err(e) => {
+            eprintln!("Error executing instruction: {}", e);
+            return;
+        }
+    }
+    
+  
+    println!("\nFinal VM State:");
+    println!("{}", vm.debug_info());
+    
+ 
+    let instruction = vm.read_memory(PC_START).unwrap_or(0);
+    let opcode = extract_opcode(instruction);
+    
+    println!("\nInstruction Analysis:");
+    println!("Instruction: 0x{:04X}", instruction);
+    println!("Opcode: {}", opcode);
+    
+    match Opcodes::from_u16(opcode) {
+        Some(op) => {
+            println!("Operation: {} - {}", op.to_string(), op.description());
+        }
+        None => {
+            println!("Unknown opcode: {}", opcode);
+        }
+    }
+    
+    
+    println!("\nRegister Values:");
+    for i in 0..8 {
+        let reg = Registers::from(i);
+        let value = vm.get_register(reg).unwrap_or(0);
+        println!("R{}: 0x{:04X} ({})", i, value, value);
+    }
+    
+    println!("\nSpecial Registers:");
+    println!("PC: 0x{:04X}", vm.get_pc());
+    println!("COND: 0x{:04X}", vm.get_register(Registers::COND).unwrap_or(0));
+    
+    println!("\nVM Statistics:");
+    println!("Instructions executed: {}", vm.get_instruction_count());
+    println!("VM running: {}", vm.is_running());
 }
