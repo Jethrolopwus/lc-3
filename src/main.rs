@@ -1,5 +1,5 @@
-use Lc3::*;
-use Lc3::opcodes::{extract_opcode, Opcodes};
+use lc3::*;
+use lc3::opcodes::{extract_opcode, Opcodes};
 
 
 const PC_START: u16 = 0x3000;
