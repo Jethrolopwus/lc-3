@@ -5,7 +5,6 @@ pub mod opcodes;
 pub mod instructions;
 pub mod vm;
 
-// Re-export types for convenience
 pub use types::{
     Registers, Flags, Opcodes, TrapVectors, LC3Error,
     MEMORY_MAX, REG_COUNT, PC_START,
@@ -16,7 +15,6 @@ pub use types::{
     sign_extend_pc_offset11, sign_extend,
 };
 
-// Re-export module-specific types
 pub use registers::RegisterFile;
 pub use memory::Memory;
 pub use instructions::{InstructionExecutor, ExecutionResult};

@@ -8,7 +8,7 @@ use std::io::ErrorKind;
 pub const MEMORY_MAX: usize = 1 << 16;
 
 /// Number of registers in the LC-3 architecture
-pub const REG_COUNT: usize = 11; // R0-R7, PC, COND, COUNT
+pub const REG_COUNT: usize = 11;
 
 /// Starting address for programs
 pub const PC_START: u16 = 0x3000;
@@ -39,7 +39,7 @@ pub enum Registers {
 }
 
 impl Registers {
-    /// Get the number of registers
+
     pub fn count() -> usize {
         REG_COUNT
     }
@@ -60,7 +60,7 @@ pub enum Flags {
 }
 
 impl Flags {
-    /// Check if a flag is set in a condition code value
+    
     pub fn is_set_in(&self, condition_code: u16) -> bool {
         (condition_code & (*self as u16)) != 0
     }
@@ -94,7 +94,7 @@ pub enum Opcodes {
 }
 
 impl Opcodes {
-    /// Convert a u16 opcode value to Opcodes enum
+    
     pub fn from_u16(opcode: u16) -> Option<Opcodes> {
         match opcode {
             0 => Some(Opcodes::BR),
@@ -117,12 +117,11 @@ impl Opcodes {
         }
     }
 
-    /// Convert Opcodes enum to u16 value
+ 
     pub fn to_u16(self) -> u16 {
         self as u16
     }
 
-    /// Get string representation of opcode
     pub fn to_string(self) -> &'static str {
         match self {
             Opcodes::BR => "BR",
@@ -144,7 +143,7 @@ impl Opcodes {
         }
     }
 
-    /// Get description of what the opcode does
+    
     pub fn description(self) -> &'static str {
         match self {
             Opcodes::BR => "Branch - Conditional jump based on condition codes",
@@ -184,7 +183,7 @@ pub enum TrapVectors {
 }
 
 impl TrapVectors {
-    /// Convert a u16 trap vector to TrapVectors enum
+
     pub fn from_u16(vector: u16) -> Option<TrapVectors> {
         match vector {
             0x20 => Some(TrapVectors::GETC),
@@ -359,7 +358,7 @@ impl From<u16> for Registers {
             7 => Registers::R7,
             8 => Registers::PC,
             9 => Registers::COND,
-            _ => Registers::R0, // Default to R0 for invalid values
+            _ => Registers::R0, 
         }
     }
 }

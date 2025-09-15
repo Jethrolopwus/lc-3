@@ -1,8 +1,4 @@
 
-// This module now re-exports the opcode-related functions from types.rs
-// All opcode definitions and extraction functions have been moved to types.rs
-// for better modularity and organization.
-
 pub use crate::types::{
     Opcodes, TrapVectors,
     extract_opcode, extract_dr, extract_sr1, extract_sr2,

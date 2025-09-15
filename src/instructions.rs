@@ -1,57 +1,59 @@
 use crate::memory::Memory;
-use crate::types::{
-    Opcodes, TrapVectors, Flags, Registers,
-    extract_dr, extract_imm5, extract_imm5_flag, extract_offset6, extract_pc_offset9,
-    extract_pc_offset11, extract_sr1, extract_sr2, extract_trap_vector,
-    sign_extend_imm5, sign_extend_offset6, sign_extend_pc_offset9, sign_extend_pc_offset11,
-};
 use crate::registers::RegisterFile;
+use crate::types::{
+    Flags, Opcodes, Registers, TrapVectors, extract_dr, extract_imm5, extract_imm5_flag,
+    extract_offset6, extract_pc_offset9, extract_pc_offset11, extract_sr1, extract_sr2,
+    extract_trap_vector, sign_extend_imm5, sign_extend_offset6, sign_extend_pc_offset9,
+    sign_extend_pc_offset11,
+};
 
 #[derive(Debug, PartialEq)]
 pub enum ExecutionResult {
-    Continue,      
-    Halt,          
-    Error(String), 
+    Continue,
+    Halt,
+    Error(String),
 }
 
 pub struct InstructionExecutor;
 
 impl InstructionExecutor {
-    /// Sign extend a value with debug prints
-    /// Equivalent to: uint16_t sign_extend(uint16_t x, int bit_count)
-    pub fn sign_extend(instr: u16, bit_count: usize) -> u16 { 
+    pub fn sign_extend(instr: u16, bit_count: usize) -> u16 {
         println!("=== Sign Extend Debug ===");
         println!("Input: instr = 0x{:04X} ({})", instr, instr);
         println!("Bit count: {}", bit_count);
-        
-        // Check if sign bit is set: ((x >> (bit_count - 1)) & 1)
+
         let sign_bit = (instr >> (bit_count - 1)) & 1;
-        println!("Sign bit check: (instr >> (bit_count - 1)) & 1 = (0x{:04X} >> {}) & 1 = 0x{:04X} & 1 = {}", 
-                 instr, bit_count - 1, instr >> (bit_count - 1), sign_bit);
-        
+        println!(
+            "Sign bit check: (instr >> (bit_count - 1)) & 1 = (0x{:04X} >> {}) & 1 = 0x{:04X} & 1 = {}",
+            instr,
+            bit_count - 1,
+            instr >> (bit_count - 1),
+            sign_bit
+        );
+
         let mut result = instr;
-        
+
         if sign_bit == 1 {
             println!("Sign bit is set (negative number)");
             println!("Before extension: 0x{:04X} ({})", result, result);
-            
-            // Perform sign extension: instr |= (0xFFFF << bit_count)
+
             let mask = 0xFFFF << bit_count;
             println!("Extension mask: 0xFFFF << {} = 0x{:04X}", bit_count, mask);
-            
+
             result |= mask;
-            println!("After extension: 0x{:04X} | 0x{:04X} = 0x{:04X} ({})", 
-                     instr, mask, result, result as i16);   
+            println!(
+                "After extension: 0x{:04X} | 0x{:04X} = 0x{:04X} ({})",
+                instr, mask, result, result as i16
+            );
         } else {
             println!("Sign bit is clear (positive number) - no extension needed");
         }
-        
+
         println!("Final result: 0x{:04X} ({})", result, result as i16);
-        println!("========================");
-        
+
         result
     }
-   
+
     pub fn execute_instruction(
         instruction: u16,
         memory: &mut Memory,
@@ -82,7 +84,6 @@ impl InstructionExecutor {
         }
     }
 
-   
     fn execute_br(instruction: u16, registers: &mut RegisterFile) -> ExecutionResult {
         let pc_offset9 = extract_pc_offset9(instruction);
         let nzp = (instruction >> 9) & 0x7;
@@ -122,7 +123,6 @@ impl InstructionExecutor {
         ExecutionResult::Continue
     }
 
-    
     //=== Load a value from memory into a register ===
     fn execute_ld(
         instruction: u16,
@@ -151,7 +151,7 @@ impl InstructionExecutor {
         memory: &mut Memory,
         registers: &mut RegisterFile,
     ) -> ExecutionResult {
-        let sr = extract_dr(instruction); 
+        let sr = extract_dr(instruction);
         let pc_offset9 = extract_pc_offset9(instruction);
 
         let pc = registers.get_pc();
@@ -167,15 +167,13 @@ impl InstructionExecutor {
     //=== Save PC and jump to subroutine ====
     fn execute_jsr(instruction: u16, registers: &mut RegisterFile) -> ExecutionResult {
         let pc = registers.get_pc();
-        let _ = registers.write(Registers::R7, pc); 
+        let _ = registers.write(Registers::R7, pc);
 
         if (instruction & 0x800) != 0 {
-            
             let pc_offset11 = extract_pc_offset11(instruction);
             let offset = sign_extend_pc_offset11(pc_offset11);
             let _ = registers.set_pc(pc + offset);
         } else {
-           
             let base_reg = extract_sr1(instruction);
             let base_value = registers.read(Registers::from(base_reg)).unwrap_or(0);
             let _ = registers.set_pc(base_value);
@@ -184,7 +182,6 @@ impl InstructionExecutor {
         ExecutionResult::Continue
     }
 
-    
     //==== Perform bitwise AND operation ====
     fn execute_and(instruction: u16, registers: &mut RegisterFile) -> ExecutionResult {
         let dr = extract_dr(instruction);
@@ -208,8 +205,6 @@ impl InstructionExecutor {
         ExecutionResult::Continue
     }
 
-   
-   
     fn execute_ldr(
         instruction: u16,
         memory: &Memory,
@@ -233,13 +228,12 @@ impl InstructionExecutor {
         }
     }
 
-   
     fn execute_str(
         instruction: u16,
         memory: &mut Memory,
         registers: &mut RegisterFile,
     ) -> ExecutionResult {
-        let sr = extract_dr(instruction); 
+        let sr = extract_dr(instruction);
         let base_reg = extract_sr1(instruction);
         let offset6 = extract_offset6(instruction);
 
@@ -254,7 +248,6 @@ impl InstructionExecutor {
         }
     }
 
-   
     //=== Perform bitwise NOT operation ===
     fn execute_not(instruction: u16, registers: &mut RegisterFile) -> ExecutionResult {
         let dr = extract_dr(instruction);
@@ -268,7 +261,6 @@ impl InstructionExecutor {
 
         ExecutionResult::Continue
     }
-
 
     fn execute_ldi(
         instruction: u16,
@@ -299,7 +291,7 @@ impl InstructionExecutor {
         memory: &mut Memory,
         registers: &mut RegisterFile,
     ) -> ExecutionResult {
-        let sr = extract_dr(instruction); 
+        let sr = extract_dr(instruction);
         let pc_offset9 = extract_pc_offset9(instruction);
 
         let pc = registers.get_pc();
@@ -315,7 +307,6 @@ impl InstructionExecutor {
         }
     }
 
-    
     fn execute_jmp(instruction: u16, registers: &mut RegisterFile) -> ExecutionResult {
         let base_reg = extract_sr1(instruction);
         let base_value = registers.read(Registers::from(base_reg)).unwrap_or(0);
@@ -324,7 +315,6 @@ impl InstructionExecutor {
         ExecutionResult::Continue
     }
 
-   
     fn execute_lea(instruction: u16, registers: &mut RegisterFile) -> ExecutionResult {
         let dr = extract_dr(instruction);
         let pc_offset9 = extract_pc_offset9(instruction);
