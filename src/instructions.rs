@@ -1,10 +1,11 @@
 use crate::memory::Memory;
-use crate::opcodes::{
-    Opcodes, extract_dr, extract_imm5, extract_imm5_flag, extract_offset6, extract_pc_offset9,
-    extract_pc_offset11, extract_sr1, extract_sr2, sign_extend_imm5, sign_extend_offset6,
-    sign_extend_pc_offset9, sign_extend_pc_offset11,
+use crate::types::{
+    Opcodes, TrapVectors, Flags, Registers,
+    extract_dr, extract_imm5, extract_imm5_flag, extract_offset6, extract_pc_offset9,
+    extract_pc_offset11, extract_sr1, extract_sr2, extract_trap_vector,
+    sign_extend_imm5, sign_extend_offset6, sign_extend_pc_offset9, sign_extend_pc_offset11,
 };
-use crate::registers::{Flags, RegisterFile, Registers};
+use crate::registers::RegisterFile;
 
 #[derive(Debug, PartialEq)]
 pub enum ExecutionResult {
@@ -16,6 +17,40 @@ pub enum ExecutionResult {
 pub struct InstructionExecutor;
 
 impl InstructionExecutor {
+    /// Sign extend a value with debug prints
+    /// Equivalent to: uint16_t sign_extend(uint16_t x, int bit_count)
+    pub fn sign_extend(instr: u16, bit_count: usize) -> u16 { 
+        println!("=== Sign Extend Debug ===");
+        println!("Input: instr = 0x{:04X} ({})", instr, instr);
+        println!("Bit count: {}", bit_count);
+        
+        // Check if sign bit is set: ((x >> (bit_count - 1)) & 1)
+        let sign_bit = (instr >> (bit_count - 1)) & 1;
+        println!("Sign bit check: (instr >> (bit_count - 1)) & 1 = (0x{:04X} >> {}) & 1 = 0x{:04X} & 1 = {}", 
+                 instr, bit_count - 1, instr >> (bit_count - 1), sign_bit);
+        
+        let mut result = instr;
+        
+        if sign_bit == 1 {
+            println!("Sign bit is set (negative number)");
+            println!("Before extension: 0x{:04X} ({})", result, result);
+            
+            // Perform sign extension: instr |= (0xFFFF << bit_count)
+            let mask = 0xFFFF << bit_count;
+            println!("Extension mask: 0xFFFF << {} = 0x{:04X}", bit_count, mask);
+            
+            result |= mask;
+            println!("After extension: 0x{:04X} | 0x{:04X} = 0x{:04X} ({})", 
+                     instr, mask, result, result as i16);   
+        } else {
+            println!("Sign bit is clear (positive number) - no extension needed");
+        }
+        
+        println!("Final result: 0x{:04X} ({})", result, result as i16);
+        println!("========================");
+        
+        result
+    }
    
     pub fn execute_instruction(
         instruction: u16,
@@ -308,58 +343,36 @@ impl InstructionExecutor {
         _memory: &mut Memory,
         _registers: &mut RegisterFile,
     ) -> ExecutionResult {
-        let trap_vector = instruction & 0xFF;
+        let trap_vector = extract_trap_vector(instruction);
 
-        match trap_vector {
-            0x20 => {
-              
+        match TrapVectors::from_u16(trap_vector) {
+            Some(TrapVectors::GETC) => {
                 println!("TRAP: GETC (not implemented)");
                 ExecutionResult::Continue
             }
-            0x21 => {
-               
+            Some(TrapVectors::OUT) => {
                 println!("TRAP: OUT (not implemented)");
                 ExecutionResult::Continue
             }
-            0x22 => {
-               
+            Some(TrapVectors::PUTS) => {
                 println!("TRAP: PUTS (not implemented)");
                 ExecutionResult::Continue
             }
-            0x23 => {
-                
+            Some(TrapVectors::IN) => {
                 println!("TRAP: IN (not implemented)");
                 ExecutionResult::Continue
             }
-            0x24 => {
-              
+            Some(TrapVectors::PUTSP) => {
                 println!("TRAP: PUTSP (not implemented)");
                 ExecutionResult::Continue
             }
-            0x25 => {
-             
+            Some(TrapVectors::HALT) => {
                 println!("TRAP: HALT");
                 ExecutionResult::Halt
             }
-            _ => ExecutionResult::Error(format!("Unknown trap vector: 0x{:02X}", trap_vector)),
+            None => ExecutionResult::Error(format!("Unknown trap vector: 0x{:02X}", trap_vector)),
         }
     }
 }
 
-impl From<u16> for Registers {
-    fn from(value: u16) -> Self {
-        match value {
-            0 => Registers::R0,
-            1 => Registers::R1,
-            2 => Registers::R2,
-            3 => Registers::R3,
-            4 => Registers::R4,
-            5 => Registers::R5,
-            6 => Registers::R6,
-            7 => Registers::R7,
-            8 => Registers::PC,
-            9 => Registers::COND,
-            _ => Registers::R0,
-        }
-    }
-}
+// From<u16> for Registers is now implemented in types.rs

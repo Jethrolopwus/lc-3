@@ -1,7 +1,5 @@
 use crate::registers::RegisterFile;
-
-
-pub const MEMORY_MAX: usize = 1 << 16;
+use crate::types::{MEMORY_MAX, LC3Error};
 
 
 #[derive(Debug)]
@@ -27,17 +25,17 @@ impl Memory {
     }
 
   
-    pub fn write(&mut self, address: u16, value: u16) -> Result<(), std::io::ErrorKind> {
+    pub fn write(&mut self, address: u16, value: u16) -> Result<(), LC3Error> {
         if address as usize >= MEMORY_MAX {
-            return Err(std::io::ErrorKind::InvalidInput);
+            return Err(LC3Error::MemoryOutOfBounds);
         }
         self.locations[address as usize] = value;
         Ok(())
     }
 
-    pub fn load_program(&mut self, start_address: u16, program: &[u16]) -> Result<usize, std::io::ErrorKind> {
+    pub fn load_program(&mut self, start_address: u16, program: &[u16]) -> Result<usize, LC3Error> {
         if start_address as usize + program.len() > MEMORY_MAX {
-            return Err(std::io::ErrorKind::InvalidInput);
+            return Err(LC3Error::MemoryOutOfBounds);
         }
 
         for (i, &instruction) in program.iter().enumerate() {

@@ -1,6 +1,7 @@
 use crate::registers::RegisterFile;
 use crate::memory::Memory;
 use crate::instructions::{InstructionExecutor, ExecutionResult};
+use crate::types::Registers;
 
 
 #[derive(Debug)]
@@ -106,14 +107,14 @@ impl LC3VM {
     }
 
    
-    pub fn get_register(&self, reg: crate::registers::Registers) -> Option<u16> {
+    pub fn get_register(&self, reg: Registers) -> Option<u16> {
         self.registers.read(reg)
     }
 
    
-    pub fn set_register(&mut self, reg: crate::registers::Registers, value: u16) -> Result<(), String> {
+    pub fn set_register(&mut self, reg: Registers, value: u16) -> Result<(), String> {
         self.registers.write(reg, value)
-            .map_err(|_| "Failed to write to register".to_string())
+            .map_err(|e| format!("Failed to write to register: {}", e))
     }
 
     
@@ -161,15 +162,15 @@ impl LC3VM {
             Instructions executed: {}\n\
             Running: {}",
             self.get_pc(),
-            self.get_register(crate::registers::Registers::R0).unwrap_or(0),
-            self.get_register(crate::registers::Registers::R1).unwrap_or(0),
-            self.get_register(crate::registers::Registers::R2).unwrap_or(0),
-            self.get_register(crate::registers::Registers::R3).unwrap_or(0),
-            self.get_register(crate::registers::Registers::R4).unwrap_or(0),
-            self.get_register(crate::registers::Registers::R5).unwrap_or(0),
-            self.get_register(crate::registers::Registers::R6).unwrap_or(0),
-            self.get_register(crate::registers::Registers::R7).unwrap_or(0),
-            self.get_register(crate::registers::Registers::COND).unwrap_or(0),
+            self.get_register(Registers::R0).unwrap_or(0),
+            self.get_register(Registers::R1).unwrap_or(0),
+            self.get_register(Registers::R2).unwrap_or(0),
+            self.get_register(Registers::R3).unwrap_or(0),
+            self.get_register(Registers::R4).unwrap_or(0),
+            self.get_register(Registers::R5).unwrap_or(0),
+            self.get_register(Registers::R6).unwrap_or(0),
+            self.get_register(Registers::R7).unwrap_or(0),
+            self.get_register(Registers::COND).unwrap_or(0),
             self.instruction_count,
             self.running
         )

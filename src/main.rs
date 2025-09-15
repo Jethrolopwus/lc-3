@@ -1,20 +1,18 @@
 use lc3::*;
-use lc3::opcodes::{extract_opcode, Opcodes};
-
-
-const PC_START: u16 = 0x3000;
+use lc3::types::{extract_opcode, Opcodes, PC_START};
+use lc3::instructions::InstructionExecutor;
 
 fn main() {
     // Create a new LC-3 virtual machine
     let mut vm = LC3VM::new();
     
     
-    let test_program = vec![
+    let first_program = vec![
         0x3000,
     ];
     
   
-    match vm.initialize(PC_START, &test_program) {
+    match vm.initialize(PC_START, &first_program) {
         Ok(_) => {
             println!("VM initialized successfully");
             println!("Program loaded at address 0x{:04X}", PC_START);
@@ -77,4 +75,31 @@ fn main() {
     println!("\nVM Statistics:");
     println!("Instructions executed: {}", vm.get_instruction_count());
     println!("VM running: {}", vm.is_running());
+    
+    // Test the sign_extend function with various examples
+    println!("\n{}", "=".repeat(60));
+    println!("TESTING SIGN_EXTEND FUNCTION");
+   
+    
+    let test_cases = vec![
+       
+        (0x1F, 5, "5-bit positive: 31 (0x1F)"),
+        (0x10, 5, "5-bit negative: -16 (0x10)"),
+        (0x3F, 6, "6-bit positive: 63 (0x3F)"),
+        (0x20, 6, "6-bit negative: -32 (0x20)"),
+        (0x1FF, 9, "9-bit positive: 511 (0x1FF)"),
+        (0x100, 9, "9-bit negative: -256 (0x100)"),
+        (0x7FF, 11, "11-bit positive: 2047 (0x7FF)"),
+        (0x400, 11, "11-bit negative: -1024 (0x400)"),
+    ];
+    
+    for (value, bit_count, description) in test_cases {
+        println!("\nTest: {}", description);
+        let result = InstructionExecutor::sign_extend(value, bit_count);
+        println!("Expected behavior: {} should become {}", 
+                 if (value >> (bit_count - 1)) & 1 == 1 { "negative" } else { "positive" },
+                 result as i16);
+    }
+    
+    
 }

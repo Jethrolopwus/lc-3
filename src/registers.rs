@@ -1,32 +1,4 @@
-use std::io::ErrorKind;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[repr(u16)]
-pub enum Registers {
-    R0 = 0,
-    R1,
-    R2,
-    R3,
-    R4,
-    R5,
-    R6,
-    R7,
-    PC,    
-    COND,  
-    COUNT, 
-}
-
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[repr(u16)]
-pub enum Flags {
-    POS = 1 << 0, /* P - Positive */
-    ZRO = 1 << 1, /* Z - Zero */
-    NEG = 1 << 2, /* N - Negative */
-}
-
-
-pub const REG_COUNT: usize = Registers::COUNT as usize;
+use crate::types::{Registers, Flags, REG_COUNT, LC3Error};
 
 #[derive(Debug)]
 pub struct RegisterFile {
@@ -52,16 +24,16 @@ impl RegisterFile {
     }
 
     
-    pub fn write(&mut self, reg: Registers, value: u16) -> Result<(), ErrorKind> {
+    pub fn write(&mut self, reg: Registers, value: u16) -> Result<(), LC3Error> {
         if reg as usize >= REG_COUNT {
-            return Err(ErrorKind::InvalidInput);
+            return Err(LC3Error::RegisterOutOfBounds);
         }
         self.locations[reg as usize] = value;
         Ok(())
     }
 
     
-    pub fn update_condition_code(&mut self, value: u16) -> Result<(), ErrorKind> {
+    pub fn update_condition_code(&mut self, value: u16) -> Result<(), LC3Error> {
         let flag = if value == 0 {
             Flags::ZRO
         } else if (value as i16) < 0 {
@@ -78,12 +50,12 @@ impl RegisterFile {
         self.read(Registers::PC).unwrap_or(0)
     }
 
-    pub fn set_pc(&mut self, value: u16) -> Result<(), ErrorKind> {
+    pub fn set_pc(&mut self, value: u16) -> Result<(), LC3Error> {
         self.write(Registers::PC, value)
     }
 
     
-    pub fn increment_pc(&mut self) -> Result<(), ErrorKind> {
+    pub fn increment_pc(&mut self) -> Result<(), LC3Error> {
         let current_pc = self.get_pc();
         self.set_pc(current_pc + 1)
     }
